@@ -1,6 +1,6 @@
 # TP Projet System
 
-10/02/2023 -> ???
+10-02-2023 -> 24-03-2023
 
 Gabriel DEHAYE et
 Florian Emmanuelle EPAIN
@@ -18,7 +18,7 @@ assets/audio/test.wav
 
 ## TP4/5
 
-On doit lire une chaîne de caratcères rentrée par l'utilisateur.ice.
+On doit lire une chaîne de caractères rentrée par l'utilisateur.ice.
 
 ```c
 char music_file[MAX_LENGTH];
@@ -29,8 +29,11 @@ music_file[strlen(music_file) - 1] = '\0';
 printf("Chaine lue: *%s*\n", music_file);
 ```
 
-Créer un file descriptor qui va remplir les champs:
-sample_rate, sample_size, channels
+Créer un `file descriptor` qui va remplir les champs:
+
+- sample_rate
+- sample_size
+- channels
 
 ```c
 // -- Creation of the file descriptior --
@@ -47,7 +50,7 @@ if (fd < 0)
 }
 ```
 
-Créer un audio descriptor avec les champs précédemment remplis.
+Créer un `audio descriptor` avec les champs précédemment remplis.
 
 ```c
 // -- Creation of the audio descriptior --
@@ -60,7 +63,7 @@ if (audio_descriptor < 0)
 }
 ```
 
-Créer un buffer, lire une première fois le file descriptor dans le buffer, tant qu'il reste des bytes à lire on joue dans la sortie audio, en utilisant l'audio descriptor, et on lit les restes.
+Créer un buffer, lire une première fois le `file descriptor` dans le buffer, tant qu'il reste des `bytes` à lire on joue dans la sortie audio, en utilisant l'`audio descriptor`, et on lit les restes.
 
 ```c
 // -- Read and write the wave file using the 2 previous descriptors  --
@@ -86,7 +89,7 @@ Le programme lit bien le fichier audio rentré, sans problème.
 
 ### Questions
 
-1. Plus la fréquence est grande, plus la vitesse de lecture est rapide. Avec une fréquence deux fois plus importante, on obtient une vitesse deux fois plus élevée.
+1. Plus la *fréquence* est grande, plus la *vitesse de lecture* est rapide. Avec une fréquence deux fois plus importante, on obtient une vitesse deux fois plus élevée.
 
     ```c
     // -- Creation of the audio descriptior --
@@ -100,7 +103,7 @@ Le programme lit bien le fichier audio rentré, sans problème.
     }
     ```
 
-2. Un fichier wave est orginisé en une suite d'échantillons. Un fichier stéréo aura le samble gauche puis sample droit, et lit deux par deux les samples. Un fichier mono a juste ses samples à la suite, et lit 1 par 1. Lire un fichier stéréo comme mono va produire un son ralenti par deux, sortant dans la gauche et droite.
+2. Un fichier wave est orginisé en une suite d'échantillons. Un fichier *stéréo* aura le samble gauche puis sample droit, et lit deux par deux les samples. Un fichier *mono* a juste ses samples à la suite, et lit 1 par 1. Lire un fichier stéréo comme mono va produire un son ralenti par deux, sortant dans la gauche et droite.
 
     ```c
     // -- Creation of the audio descriptior --
@@ -114,7 +117,7 @@ Le programme lit bien le fichier audio rentré, sans problème.
     }
     ```
 
-3. 8bits instead of 16bits. or 32b instead of 16 = do not try.
+3. 8bits instead of 16bits. or 32b instead of 16 = *do not try*.
    This will create a distorded song and a big noisy song on top of the music.
 
     ```c
