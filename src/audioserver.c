@@ -1,0 +1,286 @@
+// -- exit fn --
+#include <stdlib.h>
+// -- perror --
+#include <stdio.h>
+// -- UDP --
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+// -- close sockets / sleep --
+#include <unistd.h>
+
+// -- strlen --
+#include <string.h>
+
+// --audreadinit--
+#include "../include/audio.h"
+
+#define MAX_LENGTH 100
+#define TRUE 1
+#define FALSE 0
+
+#define IP_CLIENT "86.253.89.102" // "127.0.0.1" // "148.60.173.191" // "148.60.3.86"
+#define Client_Port 1234
+#define Server_Port 2000
+
+int main(int argc, char *argv[])
+{
+    // -- Socket Creation --
+
+    int socket_descriptor, bind_err;
+    struct sockaddr_in addr;
+    socket_descriptor = socket(AF_INET, SOCK_DGRAM, 0);
+
+    if (socket_descriptor < 0)
+    {
+        perror("Error server: socket creation !");
+        exit(1);
+    }
+
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(Server_Port);
+    addr.sin_addr.s_addr = htonl(INADDR_ANY); // inet_addr(IP_SERVER);
+
+    // -- Socket Binding --
+
+    bind_err = bind(socket_descriptor, (struct sockaddr *)&addr, sizeof(struct sockaddr_in));
+
+    if (bind_err < 0)
+    {
+        perror("Error server: socket binding !");
+        exit(1);
+    }
+
+    printf("--Server-- Done with binding\n");
+
+    printf("--Server-- Listening for incoming messages...\n\n");
+
+    // -- Music's Name Reception --
+
+    // Data Request from client
+    char music_file[MAX_LENGTH];
+    socklen_t len, flen;
+    struct sockaddr_in from;
+
+    flen = sizeof(struct sockaddr_in);
+    printf("--Server-- wait...\n");
+    len = recvfrom(
+        socket_descriptor,
+        music_file,
+        sizeof(music_file),
+        0,
+        (struct sockaddr *)&from,
+        &flen);
+
+    if (len < 0)
+    {
+        perror("Error server: Msg Reception !");
+        exit(1);
+    }
+
+    printf("Received %d bytes from host %s port, %d: %s\n", len,
+           inet_ntoa(from.sin_addr), ntohs(from.sin_port), music_file);
+
+    printf("--Server-- Chaine lue: *%s*\n", music_file);
+
+    // Add the precise location of the audio file
+    // sscanf(music_file, "assets/audio/%s.wav", music_file);
+    // printf("--Server-- Chaine modifiée: *%s*\n", music_file);
+
+    // -- Creation of the file descriptior --
+
+    int sample_rate;
+    int sample_size;
+    int channels;
+    int fd = aud_readinit(music_file, &sample_rate, &sample_size, &channels);
+
+    if (fd < 0)
+    {
+        perror("Error aud_readinit !");
+        exit(1);
+    }
+
+    printf("--Server-- fd : *%d*\n", fd);
+
+    // -- Reply --
+
+    // Has to send to the client:
+    // - sample_rate
+    // - sample_size
+    // - channels
+    // - fd (not needed)
+
+    // sendto client
+    int send_err;
+    struct sockaddr_in dest;
+    // to prevent if uninitialized case (should not happens)
+    int send_msg = sample_rate; // = -1;
+
+    // REFACTOR: Get these infos from the `from` sockaddr_in
+
+    dest.sin_family = AF_INET;
+    dest.sin_port = htons(Client_Port);
+    dest.sin_addr.s_addr = inet_addr(IP_CLIENT);
+
+    char client_ready[20];
+
+    for (int count = 0; count < 3; count++)
+    {
+        if (count == 0)
+        {
+            send_msg = sample_rate;
+        }
+        else if (count == 1)
+        {
+            send_msg = sample_size;
+        }
+        else if (count == 2)
+        {
+            send_msg = channels;
+        }
+
+        // wait the 'ack'/'start signal' of the client
+
+        printf("--Server-- Wait the client\n");
+
+        len = recvfrom(
+            socket_descriptor,
+            client_ready,
+            sizeof(client_ready),
+            0,
+            (struct sockaddr *)&from,
+            &flen);
+
+        // TODO: Add a strcmp with "Client ready"
+
+        if (len < 0)
+        {
+            perror("Error server: Msg Reception !");
+            exit(1);
+        }
+
+        printf("Received %d bytes from host %s port, %d: %s\n", len,
+               inet_ntoa(from.sin_addr), ntohs(from.sin_port), client_ready);
+
+        printf("--Server-- *%s*\n", client_ready);
+
+        // send the sample_rate/size/channels
+
+        printf("--Server-- Send Data\n");
+
+        send_err = sendto(
+            socket_descriptor,
+            &send_msg,
+            sizeof(send_msg),
+            0,
+            (struct sockaddr *)&dest,
+            sizeof(struct sockaddr_in));
+
+        if (send_err < 0)
+        {
+            perror("Error server: Datagram sending !");
+            exit(1);
+        }
+
+        printf("--Server-- %i sent\n", send_msg);
+        printf("--Server-- %dbytes sent\n", send_err);
+    }
+
+    // ---- Read of the music ----
+    printf("--Server-- Send Music\n");
+
+    unsigned char buffer[1024];
+    // start by reading the first 1024 bytes
+    // FIXME: ?can breack if the song is less than 1024?
+    ssize_t byte_left = 1024;
+
+    // -- Send the Music Byte first into the buffer --
+
+    do
+    {
+        byte_left = read(fd, buffer, byte_left);
+        // send the buffer and the byte_left
+        for (int count = 0; count < 2; count++)
+        {
+            // wait the 'ack'/'start signal' of the client
+
+            printf("--Server-- Wait the client\n");
+
+            len = recvfrom(
+                socket_descriptor,
+                client_ready,
+                sizeof(client_ready),
+                0,
+                (struct sockaddr *)&from,
+                &flen);
+
+            // TODO: Add a strcmp with "Client ready"
+
+            if (len < 0)
+            {
+                perror("Error server: Msg Reception !");
+                exit(1);
+            }
+
+            printf("Received %d bytes from host %s port, %d: %s\n", len,
+                   inet_ntoa(from.sin_addr), ntohs(from.sin_port), client_ready);
+
+            printf("--Server-- *%s*\n", client_ready);
+
+            // wait 1 second for the client opening
+            // sleep(1);
+
+            if (count == 0)
+            {
+                printf("--Server-- Send byte_left: %zd\n", byte_left);
+                send_err = sendto(
+                    socket_descriptor,
+                    &byte_left,
+                    sizeof(byte_left),
+                    0,
+                    (struct sockaddr *)&dest,
+                    sizeof(struct sockaddr_in));
+            }
+            else if (count == 1)
+            {
+                printf("--Server-- Send buffer\n");
+                send_err = sendto(
+                    socket_descriptor,
+                    buffer,
+                    sizeof(buffer),
+                    0,
+                    (struct sockaddr *)&dest,
+                    sizeof(struct sockaddr_in));
+            }
+
+            if (send_err < 0)
+            {
+                perror("Error server: Datagram sending !");
+                exit(1);
+            }
+
+            // printf("--Server-- %s sent\n", music_data);
+            printf("--Server-- %dbytes sent\n", send_err);
+        }
+    } while (byte_left > 0);
+
+    if (byte_left == -1)
+    {
+        perror("Error read !");
+        exit(1);
+    }
+
+    printf("--Server-- The music ends\n");
+
+    // When ?
+    // -- Close the Socket --
+
+    int close_err = close(socket_descriptor);
+
+    if (close_err < 0)
+    {
+        perror("Error server: Socket closing !");
+        exit(1);
+    }
+}
