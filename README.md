@@ -8,6 +8,8 @@ Grp 1.2
 
 ## Execution
 
+`$ make all` into `$ make execute`, and type the music's locations from the repertory root.
+
 ```text
 $ padsp ./src/lecteur
 
