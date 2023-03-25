@@ -54,3 +54,6 @@ dkms.conf
 
 # code editor
 .vscode
+
+# Personal Audio Assets
+assets/audio/**.wav
