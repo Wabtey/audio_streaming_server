@@ -2,13 +2,15 @@
 #include <stdlib.h>
 // -- perror --
 #include <stdio.h>
-// -- UDP --
+// ---- UDP ----
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-// -- close sockets / sleep --
+// -- close sockets / sleep / access --
 #include <unistd.h>
+// -- form timeout --
+#include <sys/time.h>
 
 // -- strlen --
 #include <string.h>
@@ -20,8 +22,8 @@
 #define TRUE 1
 #define FALSE 0
 
-#define IP_CLIENT "86.253.89.102" // "127.0.0.1" // "148.60.173.191" // "148.60.3.86"
-#define Client_Port 1234
+// #define IP_CLIENT "127.0.0.1" // "86.253.89.102" // "148.60.173.191" // "148.60.3.86"
+// #define Client_Port 1234
 #define Server_Port 2000
 
 int main(int argc, char *argv[])
@@ -42,6 +44,11 @@ int main(int argc, char *argv[])
     addr.sin_port = htons(Server_Port);
     addr.sin_addr.s_addr = htonl(INADDR_ANY); // inet_addr(IP_SERVER);
 
+    char client_ready[20];
+    // sendto client
+    int send_err;
+    struct sockaddr_in dest;
+
     // -- Socket Binding --
 
     bind_err = bind(socket_descriptor, (struct sockaddr *)&addr, sizeof(struct sockaddr_in));
@@ -53,6 +60,19 @@ int main(int argc, char *argv[])
     }
 
     printf("--Server-- Done with binding\n");
+
+    // -- Socket Timeout --
+
+    // struct timeval read_timeout;
+    // read_timeout.tv_sec = 0;
+    // read_timeout.tv_usec = 1000000;
+    // int timeout_err = setsockopt(socket_descriptor, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof read_timeout);
+
+    // if (timeout_err < 0)
+    // {
+    //     perror("Error server: socket set Timeout !");
+    //     exit(1);
+    // }
 
     while (TRUE)
     {
@@ -85,11 +105,78 @@ int main(int argc, char *argv[])
         printf("Received %d bytes from host %s port, %d: %s\n", len,
                inet_ntoa(from.sin_addr), ntohs(from.sin_port), music_file);
 
+        // send the ack msg
+
         printf("--Server-- Chaine lue: *%s*\n", music_file);
 
-        // Add the precise location of the audio file
+        // IDEA: Add the precise location of the audio file
         // sscanf(music_file, "assets/audio/%s.wav", music_file);
         // printf("--Server-- Chaine modifiée: *%s*\n", music_file);
+
+        // -- Get the client infos from the `from` sockaddr_in --
+
+        dest.sin_family = from.sin_family;
+        dest.sin_port = from.sin_port;
+        dest.sin_addr.s_addr = from.sin_addr.s_addr;
+
+        // dest.sin_family = AF_INET;
+        // dest.sin_port = htons(Client_Port);
+        // dest.sin_addr.s_addr = inet_addr(IP_CLIENT);
+
+        printf("--Server-- Testing File Existence\n");
+        // IDEA: test first if there is a .wav file (for more security)
+
+        int file_existence;
+
+        if (access(music_file, F_OK) != 0)
+        {
+            printf("--Server-- File doesn't exists\n");
+
+            file_existence = FALSE;
+        }
+        else
+        {
+            printf("--Server-- File does exists\n");
+
+            file_existence = TRUE;
+        }
+
+        // wait the 'ack'/'start signal' of the client
+        len = recvfrom(
+            socket_descriptor,
+            client_ready,
+            sizeof(client_ready),
+            0,
+            (struct sockaddr *)&from,
+            &flen);
+
+        // TODO: Add a strcmp with "Client ready"
+
+        if (len < 0)
+        {
+            perror("Error server: Msg Reception !");
+            exit(1);
+        }
+
+        send_err = sendto(
+            socket_descriptor,
+            &file_existence,
+            sizeof(file_existence),
+            0,
+            (struct sockaddr *)&dest,
+            sizeof(struct sockaddr_in));
+
+        if (send_err < 0)
+        {
+            perror("Error server: Datagram sending ! - `file existence msg`");
+            exit(1);
+        }
+
+        if (!file_existence)
+        {
+            // Try Again
+            continue;
+        }
 
         // -- Creation of the file descriptior --
 
@@ -114,23 +201,8 @@ int main(int argc, char *argv[])
         // - channels
         // - fd (not needed)
 
-        // sendto client
-        int send_err;
-        struct sockaddr_in dest;
         // to prevent if uninitialized case (should not happens)
         int send_msg = sample_rate; // = -1;
-
-        // REFACTOR: Get these infos from the `from` sockaddr_in
-
-        dest.sin_family = from.sin_family;
-        dest.sin_port = from.sin_port;
-        dest.sin_addr.s_addr = from.sin_addr.s_addr;
-
-        // dest.sin_family = AF_INET;
-        // dest.sin_port = htons(Client_Port);
-        // dest.sin_addr.s_addr = inet_addr(IP_CLIENT);
-
-        char client_ready[20];
 
         for (int count = 0; count < 3; count++)
         {
