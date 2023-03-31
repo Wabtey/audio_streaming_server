@@ -2,6 +2,8 @@
 #include <stdlib.h>
 // -- perror --
 #include <stdio.h>
+// -- strtod (convert string to float) --
+#include <ctype.h>
 // -- strlen/strcpy --
 #include <string.h>
 // -- UDP --
@@ -71,12 +73,13 @@ int main(int argc, char *argv[])
     while (TRUE)
     {
 
-        printf("--Client-- Please type here, the name of the music.\n");
         // -- Music's Name Emission --
+
+        printf("--Client-- Please type here, the name of the music.\n");
 
         char music_file[MAX_LENGTH];
         fgets(music_file, MAX_LENGTH, stdin);
-        // Remove the escape character from the user input
+        // Remove the return character "\n" from the user input
         music_file[strlen(music_file) - 1] = '\0';
 
         printf("--Client-- String read: *%s*\n", music_file);
@@ -132,6 +135,32 @@ int main(int argc, char *argv[])
         {
             printf("--Client-- The file does not exist. Try Again\n");
             continue;
+        }
+
+        // -- Filter force to choose --
+        
+        double speed;
+        char *endptr;
+
+        int correct_speed = FALSE;
+        char speed_wanted[MAX_LENGTH];
+        while (!correct_speed) {
+            printf("--Client-- Please type here, the wanyted speed.\n");
+            printf("--Client-- examples, 1: for normal, 2: for twice faster, 0.5: for twice slower\n");
+
+            if (fgets(speed_wanted, sizeof(speed_wanted), stdin) == NULL) {
+                /* Unexpected error */
+                perror("Error client: speed fgets !");
+                exit(1);
+            }
+
+            // parse the string into float
+            speed = strtod(speed_wanted, &endptr);
+            if (speed = 0) {
+                printf("--Client-- You can't play a music at 0 speed.\n");
+            }
+            else if ((*endptr == '\0') || (isspace(*endptr) != 0))
+                correct_speed = TRUE;                
         }
 
         // -- data reply from the server --
@@ -204,7 +233,7 @@ int main(int argc, char *argv[])
 
         // -- Creation of the audio descriptior --
 
-        int audio_descriptor = aud_writeinit(sample_rate, sample_size, channels);
+        int audio_descriptor = aud_writeinit(sample_rate*speed, sample_size, channels);
         if (audio_descriptor < 0)
         {
             perror("Error aud_writeinit !");
