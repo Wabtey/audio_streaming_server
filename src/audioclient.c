@@ -70,6 +70,8 @@ int main(int argc, char *argv[])
 
     while (TRUE)
     {
+
+        printf("--Client-- Please type here, the name of the music.\n");
         // -- Music's Name Emission --
 
         char music_file[MAX_LENGTH];
@@ -77,7 +79,7 @@ int main(int argc, char *argv[])
         // Remove the escape character from the user input
         music_file[strlen(music_file) - 1] = '\0';
 
-        printf("--Client-- Chaine lue: *%s*\n", music_file);
+        printf("--Client-- String read: *%s*\n", music_file);
 
         send_err = sendto(
             socket_descriptor,
