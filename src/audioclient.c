@@ -28,8 +28,15 @@ int main(int argc, char *argv[])
 
     int socket_descriptor, bind_err, send_err;
 
+    char client_ready[20] = "Client ready";
+
     struct sockaddr_in dest;
     struct sockaddr_in addr;
+
+    // Receive's Stuff
+    socklen_t len, flen;
+    struct sockaddr_in from;
+    flen = sizeof(struct sockaddr_in);
 
     // -- Socket Creation --
 
@@ -45,6 +52,10 @@ int main(int argc, char *argv[])
     addr.sin_port = htons(Client_Port);
     addr.sin_addr.s_addr = htonl(INADDR_ANY); // IP_CLIENT
 
+    dest.sin_family = AF_INET;
+    dest.sin_port = htons(Server_Port);
+    dest.sin_addr.s_addr = inet_addr(IP_SERVER); // htonl(INADDR_ANY); // inet_addr(IP_SERVER);
+
     // -- Socket Binding --
 
     bind_err = bind(socket_descriptor, (struct sockaddr *)&addr, sizeof(struct sockaddr_in));
@@ -57,66 +68,40 @@ int main(int argc, char *argv[])
 
     printf("--Client-- Done with binding\n");
 
-    // -- Music's Name Emission --
-
-    char music_file[MAX_LENGTH];
-    fgets(music_file, MAX_LENGTH, stdin);
-    // Remove the escape character from the user input
-    music_file[strlen(music_file) - 1] = '\0';
-
-    printf("--Client-- Chaine lue: *%s*\n", music_file);
-
-    dest.sin_family = AF_INET;
-    dest.sin_port = htons(Server_Port);
-    dest.sin_addr.s_addr = inet_addr(IP_SERVER); // htonl(INADDR_ANY); // inet_addr(IP_SERVER);
-
-    send_err = sendto(
-        socket_descriptor,
-        music_file,
-        strlen(music_file) + 1,
-        0,
-        (struct sockaddr *)&dest,
-        sizeof(struct sockaddr_in));
-
-    if (send_err < 0)
+    while (TRUE)
     {
-        perror("Error client: Datagram sending !");
-        exit(1);
-    }
+        // -- Music's Name Emission --
 
-    printf("--Client-- %dbytes sent\n", send_err);
+        char music_file[MAX_LENGTH];
+        fgets(music_file, MAX_LENGTH, stdin);
+        // Remove the escape character from the user input
+        music_file[strlen(music_file) - 1] = '\0';
 
-    // -- data reply from the server --
+        printf("--Client-- Chaine lue: *%s*\n", music_file);
 
-    printf("--Client-- Listening for incoming messages...\n\n");
+        send_err = sendto(
+            socket_descriptor,
+            music_file,
+            sizeof(music_file),
+            0,
+            (struct sockaddr *)&dest,
+            sizeof(struct sockaddr_in));
 
-    socklen_t len, flen;
-    struct sockaddr_in from;
+        if (send_err < 0)
+        {
+            perror("Error client: Datagram sending !");
+            exit(1);
+        }
 
-    flen = sizeof(struct sockaddr_in);
-    printf("--Client-- wait...\n");
+        printf("--Client-- %dbytes sent\n", send_err);
 
-    // REFACTOR: Nice loop to catch everything
+        int file_existence;
 
-    char client_ready[20] = "Client ready";
-    // default value
-    int server_message; // = -1;
-
-    // -- DATA --
-
-    int sample_rate;
-    int sample_size;
-    int channels;
-
-    // -- END DATA --
-
-    for (int count = 0; count < 3; count++)
-    {
         printf("--Client-- Send State: Ready\n");
         send_err = sendto(
             socket_descriptor,
             client_ready,
-            strlen(client_ready) + 1,
+            sizeof(client_ready),
             0,
             (struct sockaddr *)&dest,
             sizeof(struct sockaddr_in));
@@ -127,60 +112,42 @@ int main(int argc, char *argv[])
             exit(1);
         }
 
-        printf("--Client-- Wait Audio Data\n");
-
         len = recvfrom(
             socket_descriptor,
-            &server_message,
-            sizeof(server_message),
+            &file_existence,
+            sizeof(file_existence),
             0,
             (struct sockaddr *)&from,
             &flen);
 
         if (len < 0)
         {
-            perror("Error client: Msg Reception !");
+            perror("Error client: file_existence Reception !");
             exit(1);
         }
 
-        if (count == 0)
+        if (!file_existence)
         {
-            sample_rate = server_message;
-            printf("--Client-- sample_rate:\n");
-        }
-        else if (count == 1)
-        {
-            sample_size = server_message;
-            printf("--Client-- sample_size:\n");
-        }
-        else if (count == 2)
-        {
-            channels = server_message;
-            printf("--Client-- channels:\n");
+            printf("--Client-- The file does not exist. Try Again\n");
+            continue;
         }
 
-        printf("Received %d bytes from host %s port, %d: %i\n", len,
-               inet_ntoa(from.sin_addr), ntohs(from.sin_port), server_message);
-    }
+        // -- data reply from the server --
 
-    // -- Creation of the audio descriptior --
+        printf("--Client-- Listening for incoming messages...\n\n");
 
-    int audio_descriptor = aud_writeinit(sample_rate, sample_size, channels);
-    if (audio_descriptor < 0)
-    {
-        perror("Error aud_writeinit !");
-        exit(1);
-    }
+        // default value
+        int server_message; // = -1;
 
-    // -- Write the audio from the data, and the chunk of music the server sends us --
+        // -- DATA --
 
-    unsigned char buffer[1024];
-    ssize_t byte_left;
+        int sample_rate;
+        int sample_size;
+        int channels;
 
-    do
-    {
-        // wait for buffer and the music_bytes
-        for (int count = 0; count < 2; count++)
+        // -- END DATA --
+
+        for (int count = 0; count < 3; count++)
         {
             printf("--Client-- Send State: Ready\n");
             send_err = sendto(
@@ -199,63 +166,135 @@ int main(int argc, char *argv[])
 
             printf("--Client-- Wait Audio Data\n");
 
+            len = recvfrom(
+                socket_descriptor,
+                &server_message,
+                sizeof(server_message),
+                0,
+                (struct sockaddr *)&from,
+                &flen);
+
+            if (len < 0)
+            {
+                perror("Error client: Msg Reception !");
+                exit(1);
+            }
+
             if (count == 0)
             {
-                len = recvfrom(
-                    socket_descriptor,
-                    &byte_left,
-                    sizeof(byte_left),
-                    0,
-                    (struct sockaddr *)&from,
-                    &flen);
-
-                if (len < 0)
-                {
-                    perror("Error client: Music Byte Reception !");
-                    exit(1);
-                }
-
-                printf("--Client-- music's bytes: %zd\n", byte_left);
+                sample_rate = server_message;
+                printf("--Client-- sample_rate:\n");
             }
             else if (count == 1)
             {
+                sample_size = server_message;
+                printf("--Client-- sample_size:\n");
+            }
+            else if (count == 2)
+            {
+                channels = server_message;
+                printf("--Client-- channels:\n");
+            }
 
-                len = recvfrom(
+            printf("Received %d bytes from host %s port, %d: %i\n", len,
+                   inet_ntoa(from.sin_addr), ntohs(from.sin_port), server_message);
+        }
+
+        // -- Creation of the audio descriptior --
+
+        int audio_descriptor = aud_writeinit(sample_rate, sample_size, channels);
+        if (audio_descriptor < 0)
+        {
+            perror("Error aud_writeinit !");
+            exit(1);
+        }
+
+        // -- Write the audio from the data, and the chunk of music the server sends us --
+
+        unsigned char buffer[1024];
+        ssize_t byte_left;
+
+        do
+        {
+            // wait for buffer and the music_bytes
+            for (int count = 0; count < 2; count++)
+            {
+                printf("--Client-- Send State: Ready\n");
+                send_err = sendto(
                     socket_descriptor,
-                    buffer,
-                    sizeof(buffer),
+                    client_ready,
+                    sizeof(client_ready),
                     0,
-                    (struct sockaddr *)&from,
-                    &flen);
+                    (struct sockaddr *)&dest,
+                    sizeof(struct sockaddr_in));
 
-                if (len < 0)
+                if (send_err < 0)
                 {
-                    perror("Error client: Buffer Reception !");
+                    perror("Error client: Ready Datagram sending !");
                     exit(1);
                 }
 
-                printf("--Client-- buffer:\n");
+                printf("--Client-- Wait Audio Data\n");
+
+                if (count == 0)
+                {
+                    len = recvfrom(
+                        socket_descriptor,
+                        &byte_left,
+                        sizeof(byte_left),
+                        0,
+                        (struct sockaddr *)&from,
+                        &flen);
+
+                    if (len < 0)
+                    {
+                        perror("Error client: Music Byte Reception !");
+                        exit(1);
+                    }
+
+                    printf("--Client-- music's bytes: %zd\n", byte_left);
+                }
+                else if (count == 1)
+                {
+
+                    len = recvfrom(
+                        socket_descriptor,
+                        buffer,
+                        sizeof(buffer),
+                        0,
+                        (struct sockaddr *)&from,
+                        &flen);
+
+                    if (len < 0)
+                    {
+                        perror("Error client: Buffer Reception !");
+                        exit(1);
+                    }
+
+                    printf("--Client-- buffer:\n");
+                }
+
+                printf("Received %d bytes from host %s port, %d\n", len,
+                       inet_ntoa(from.sin_addr), ntohs(from.sin_port));
             }
+            if (byte_left <= 0)
+            {
+                printf("--Client-- The music ends\n");
+                // the break is mandatory to avoid copypaste code
+                // and to ensure that we don't ask the computer to read 0 bytes
+                break;
+            }
+            write(audio_descriptor, buffer, byte_left);
+        } while (byte_left > 0);
 
-            printf("Received %d bytes from host %s port, %d\n", len,
-                   inet_ntoa(from.sin_addr), ntohs(from.sin_port));
-        }
-        if (byte_left <= 0)
+        if (byte_left == -1)
         {
-            printf("--Client-- The music ends\n");
-            // the break is mandatory to avoid copypaste code
-            // and to ensure that we don't ask the computer to read 0 bytes
-            break;
+            perror("Error read !");
+            exit(1);
         }
-        write(audio_descriptor, buffer, byte_left);
-    } while (byte_left > 0);
-
-    if (byte_left == -1)
-    {
-        perror("Error read !");
-        exit(1);
     }
 
+    // TODO: Close it after a user timeout
     // -- Close the Socket --
 
     int close_err = close(socket_descriptor);

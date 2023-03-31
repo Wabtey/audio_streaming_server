@@ -4,18 +4,25 @@ authors: "Dehaye Gabriel", "Epain Florian"
 
 # Documentation Projet de Systèmes: streaming audio
 
-## Commandes utilisateur
+## Commandes utilisateur.rice
 
-Dans un premier temps, il faut se situer dans le dossier TP_Projet et exécuter la commande `make server`.
-Ensuite, pour exécuter audioserver dans un terminal, il suffit de taper `make executeserver`.
-Pour exécuter audioclient dans un terminal, il suffit de taper `make executeclient`.
+Dans un premier temps, il faut se situer dans le dossier *audio_streaming_server* et exécuter la commande `make server`.
+Ensuite, pour exécuter *audioserver* dans un terminal, il suffit de taper `make executeserver`.
+Pour exécuter *audioclient* dans un terminal, il suffit de taper `make executeclient`.
 
 Après, le client attend qu'on lui rentre l'emplacement du fichier à lire, pour qu'il puisse le demander au serveur.
-Ici, il faut donc rentrer `assets/audio/test.wav` .
-
-`fgets(music_file, MAX_LENGTH, stdin);`
+Ici, il faut donc rentrer par exemple `assets/audio/test.wav` .
 
 ## Communication entre le serveur et le client
+
+### Boucle et Vérification
+
+Le serveur va tester dès la réception du nom de la musique à lire,
+si elle existe côté serveur.
+Et envoyer le résultât au programme client,
+afin que le client puisse s'adapter de son côté si il y a erreur.
+
+### Propriétés de la musique
 
 Le serveur receptionne ensuite le message du client et lui envoie dans cet ordre:
 
@@ -33,7 +40,11 @@ send_err = sendto(
     sizeof(struct sockaddr_in));
 ```
 
+### Lire la musique
+
 Le client crée le descripteur audio puis attend du serveur le nombre de byte à lire `byte_left` et le `buffer` contenant une partie à lire du fichier audio. La lecture continue ainsi jusqu'à ce que le serveur n'envoie plus rien au client. Cela permet de lire la musique.
+
+Partie Client:
 
 ```c
 // -- Write the audio from the data, and the chunk of music the server sends us --
@@ -68,7 +79,7 @@ do
                 exit(1);
             }
 
-            printf("--Client-- music's bytes: %zd\n", byte_left);
+            printf("--Client-- music's bytes: *%zd*\n", byte_left);
         }
         else if (count == 1)
         {
@@ -108,3 +119,13 @@ if (byte_left == -1)
     exit(1);
 }
 ```
+
+### Respect de l'ordre d'envoi
+
+Afin de synchroniser les deux programmes (qui tournent sur une même machine),
+Nous procedons à un protocole "d'Attente".
+Avant d'envoyer des données, nous souhaitons savoir que notre destinataire est prêt.
+
+### Resistance à certaine perte de paquet
+
+???
