@@ -271,7 +271,7 @@ int main(int argc, char *argv[])
 
         unsigned char buffer[1024];
         // start by reading the first 1024 bytes
-        // FIXME: ?can breack if the song is less than 1024?
+        // FIXME: ?can break if the song is less than 1024?
         ssize_t byte_left = 1024;
 
         // -- Send the Music Byte first into the buffer --
@@ -353,7 +353,7 @@ int main(int argc, char *argv[])
         printf("--Server-- The music ends\n");
     }
 
-    // When ?
+    // When ? never suppose to do so.
     // -- Close the Socket --
 
     int close_err = close(socket_descriptor);
