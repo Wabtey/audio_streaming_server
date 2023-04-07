@@ -81,12 +81,14 @@ int main(int argc, char *argv[])
 
     printf("--Client-- Done with binding\n");
 
+    // int quit = FALSE;
+    // !quit
     while (TRUE)
     {
 
-        // -- Music's Name Emission --
+        // -- Command line - Music's Name Emission --
 
-        printf("--Client-- Please type here, the name of the music.\n");
+        printf("--Client-- Please type here, the name of the music. (or \"quit\")\n");
 
         char music_file[MAX_LENGTH];
         fgets(music_file, MAX_LENGTH, stdin);
@@ -94,6 +96,30 @@ int main(int argc, char *argv[])
         music_file[strlen(music_file) - 1] = '\0';
 
         printf("--Client-- String read: *%s*\n", music_file);
+
+        // -- Handle QUIT command --
+
+        // Convert to upper case
+        int j = 0;
+        while (music_file[j] != '\0')
+        {
+            music_file[j] = toupper(music_file[j]);
+            j++;
+        }
+
+        if (
+            strcmp(music_file, "YES") == 0 ||
+            strcmp(music_file, "Y") == 0 ||
+            strcmp(music_file, "OUI") == 0 ||
+            strcmp(music_file, "O") == 0 ||
+            strcmp(music_file, "QUIT") == 0)
+        {
+            // quit = TRUE;
+            printf("--Client-- Quitting...\n");
+            break;
+        }
+
+        //
 
         send_err = sendto(
             socket_descriptor,
@@ -445,6 +471,8 @@ int main(int argc, char *argv[])
 
     // TODO: Close it after a user timeout
     // -- Close the Socket --
+
+    printf("--Client-- Close the Socket\n");
 
     int close_err = close(socket_descriptor);
 
