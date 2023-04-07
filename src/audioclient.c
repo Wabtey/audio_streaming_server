@@ -79,6 +79,31 @@ int main(int argc, char *argv[])
 
         printf("--Client-- Chaine lue: *%s*\n", music_file);
 
+        int channels = 0;
+
+        while (channels == 0)
+        {
+            printf("--Client-- Mono?(y/yes or n/no)\n");
+
+            char filter[MAX_LENGTH];
+            fgets(filter, MAX_LENGTH, stdin);
+            filter[strlen(filter) - 1] = '\0';
+
+            printf("--Client-- Chaine lue: *%s*\n", filter);
+
+            if (strcmp(filter, "y") == 0 || strcmp(filter, "yes") == 0)
+            {
+                channels = 1;
+            }
+            else if (strcmp(filter, "n") == 0 || strcmp(filter, "no") == 0)
+            {
+                channels = 2;
+            }
+            else
+            {
+            }
+        }
+
         send_err = sendto(
             socket_descriptor,
             music_file,
@@ -143,7 +168,7 @@ int main(int argc, char *argv[])
 
         int sample_rate;
         int sample_size;
-        int channels;
+        // int channels;
 
         // -- END DATA --
 
@@ -192,7 +217,11 @@ int main(int argc, char *argv[])
             }
             else if (count == 2)
             {
-                channels = server_message;
+                if (channels == 0)
+                {
+                    channels = server_message;
+                    printf("--Client-- Number of channels overwrite:%d\n", channels);
+                }
                 printf("--Client-- channels:\n");
             }
 
@@ -200,7 +229,7 @@ int main(int argc, char *argv[])
                    inet_ntoa(from.sin_addr), ntohs(from.sin_port), server_message);
         }
 
-        // -- Creation of the audio descriptior --
+        // -- Creation of the audio descriptor --
 
         int audio_descriptor = aud_writeinit(sample_rate, sample_size, channels);
         if (audio_descriptor < 0)
