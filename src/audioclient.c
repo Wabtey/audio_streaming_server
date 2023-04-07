@@ -2,7 +2,7 @@
 #include <stdlib.h>
 // -- perror --
 #include <stdio.h>
-// -- strtod (convert string to float) --
+// -- strtod (convert string to float) / toupper --
 #include <ctype.h>
 // -- strlen/strcpy --
 #include <string.h>
@@ -24,6 +24,17 @@
 #define IP_SERVER "127.0.0.1" // "148.60.173.191" // "148.60.3.86"
 #define Client_Port 1234
 #define Server_Port 2000
+
+void upper_string(char s[])
+{
+    int c = 0;
+
+    while (s[c] != '\0')
+    {
+        s[c] = toupper(s[c]);
+        c++;
+    }
+}
 
 int main(int argc, char *argv[])
 {
@@ -137,30 +148,83 @@ int main(int argc, char *argv[])
             continue;
         }
 
-        // -- Filter force to choose --
-        
-        double speed;
-        char *endptr;
+        // ----- Filters -----
 
-        int correct_speed = FALSE;
-        char speed_wanted[MAX_LENGTH];
-        while (!correct_speed) {
-            printf("--Client-- Please type here, the wanyted speed.\n");
-            printf("--Client-- examples, 1: for normal, 2: for twice faster, 0.5: for twice slower\n");
+        char answer_effects[MAX_LENGTH];
+        int effects = FALSE;
 
-            if (fgets(speed_wanted, sizeof(speed_wanted), stdin) == NULL) {
+        int correct_answer = FALSE;
+        while (!correct_answer)
+        {
+            printf("--Client-- Do you want to apply any effects ? (Y/N)\n");
+
+            if (fgets(answer_effects, MAX_LENGTH, stdin) == NULL)
+            {
                 /* Unexpected error */
-                perror("Error client: speed fgets !");
+                perror("Error client: effects fgets !");
                 exit(1);
             }
+            // Remove the return character "\n" from the user input
+            answer_effects[strlen(answer_effects) - 1] = '\0';
 
-            // parse the string into float
-            speed = strtod(speed_wanted, &endptr);
-            if (speed = 0) {
-                printf("--Client-- You can't play a music at 0 speed.\n");
+            // Convert to upper case
+            int j = 0;
+            // while answer_effects[j]
+            while (answer_effects[j] != '\0')
+            {
+                answer_effects[j] = toupper(answer_effects[j]);
+                j++;
             }
-            else if ((*endptr == '\0') || (isspace(*endptr) != 0))
-                correct_speed = TRUE;                
+
+            printf("--Client-- *%s*\n", answer_effects);
+
+            // or just compare the first letter
+            if (strcmp(answer_effects, "YES") == 0 || strcmp(answer_effects, "Y") == 0 || strcmp(answer_effects, "OUI") == 0 || strcmp(answer_effects, "O") == 0)
+            {
+                printf("--Client-- YES\n");
+                correct_answer = TRUE;
+                effects = TRUE;
+            }
+            else if (strcmp(answer_effects, "NO") == 0 || strcmp(answer_effects, "NON") == 0 || strcmp(answer_effects, "N") == 0)
+            {
+                printf("--Client-- NO\n");
+                correct_answer = TRUE;
+                effects = FALSE;
+            }
+            else
+            {
+                printf("--Client-- Wrong answer. Please type (Y/N/Yes/No/Oui/Non/O)\n");
+            }
+        }
+
+        double speed = 1;
+        if (effects)
+        {
+            char *endptr;
+
+            int correct_speed = FALSE;
+            char speed_wanted[MAX_LENGTH];
+            while (!correct_speed)
+            {
+                printf("--Client-- Please type here, the wanted speed.\n");
+                printf("--Client-- examples, 1: for normal, 2: for twice faster, 0.5: for twice slower\n");
+
+                if (fgets(speed_wanted, sizeof(speed_wanted), stdin) == NULL)
+                {
+                    /* Unexpected error */
+                    perror("Error client: speed fgets !");
+                    exit(1);
+                }
+
+                // parse the string into float
+                speed = strtod(speed_wanted, &endptr);
+                if (speed == 0)
+                {
+                    printf("--Client-- You can't play a music at 0 or less speed.\n");
+                }
+                else if ((*endptr == '\0') || (isspace(*endptr) != 0))
+                    correct_speed = TRUE;
+            }
         }
 
         // -- data reply from the server --
@@ -233,7 +297,7 @@ int main(int argc, char *argv[])
 
         // -- Creation of the audio descriptior --
 
-        int audio_descriptor = aud_writeinit(sample_rate*speed, sample_size, channels);
+        int audio_descriptor = aud_writeinit(sample_rate * speed, sample_size, channels);
         if (audio_descriptor < 0)
         {
             perror("Error aud_writeinit !");
