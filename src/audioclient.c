@@ -198,6 +198,8 @@ int main(int argc, char *argv[])
         }
 
         double speed = 1;
+        int channels = 0;
+
         if (effects)
         {
             char *endptr;
@@ -225,6 +227,54 @@ int main(int argc, char *argv[])
                 else if ((*endptr == '\0') || (isspace(*endptr) != 0))
                     correct_speed = TRUE;
             }
+
+            char channels_wanted[MAX_LENGTH];
+            while (channels == 0)
+            {
+                // REFACTOR: just ask for mono or stereo
+                printf("--Client-- Mono?(y/yes or n/no)\n");
+
+                if (fgets(channels_wanted, MAX_LENGTH, stdin) == NULL)
+                {
+                    /* Unexpected error */
+                    perror("Error client: channels fgets !");
+                    exit(1);
+                }
+                channels_wanted[strlen(channels_wanted) - 1] = '\0';
+
+                printf("--Client-- String read: *%s*\n", channels_wanted);
+
+                // Convert to upper case
+                int j = 0;
+                while (channels_wanted[j] != '\0')
+                {
+                    channels_wanted[j] = toupper(channels_wanted[j]);
+                    j++;
+                }
+
+                // or just compare the first letter
+                if (
+                    strcmp(channels_wanted, "YES") == 0 ||
+                    strcmp(channels_wanted, "Y") == 0 ||
+                    strcmp(channels_wanted, "OUI") == 0 ||
+                    strcmp(channels_wanted, "O") == 0 ||
+                    strcmp(channels_wanted, "MONO") == 0)
+                {
+                    channels = 1;
+                }
+                else if (
+                    strcmp(channels_wanted, "NO") == 0 ||
+                    strcmp(channels_wanted, "NON") == 0 ||
+                    strcmp(channels_wanted, "N") == 0 ||
+                    strcmp(channels_wanted, "STEREO") == 0)
+                {
+                    channels = 2;
+                }
+                else
+                {
+                    printf("--Client-- Wrong answer. Please type (Y/N/Yes/No/Oui/Non/O/Mono/Stereo)\n");
+                }
+            }
         }
 
         // -- data reply from the server --
@@ -238,7 +288,7 @@ int main(int argc, char *argv[])
 
         int sample_rate;
         int sample_size;
-        int channels;
+        // int channels;
 
         // -- END DATA --
 
@@ -287,7 +337,11 @@ int main(int argc, char *argv[])
             }
             else if (count == 2)
             {
-                channels = server_message;
+                if (channels == 0)
+                {
+                    channels = server_message;
+                    printf("--Client-- Number of channels overwrite:%d\n", channels);
+                }
                 printf("--Client-- channels:\n");
             }
 
@@ -295,7 +349,7 @@ int main(int argc, char *argv[])
                    inet_ntoa(from.sin_addr), ntohs(from.sin_port), server_message);
         }
 
-        // -- Creation of the audio descriptior --
+        // -- Creation of the audio descriptor --
 
         int audio_descriptor = aud_writeinit(sample_rate * speed, sample_size, channels);
         if (audio_descriptor < 0)
