@@ -19,6 +19,17 @@ Nous avons eu des difficultés à la fin du TP à comprendre pourquoi notre prog
 
 ## 14-04-2023
 
+### TODOs
+
+- echo
+- IRT (In Real Time) modification effects
+  - Stop the music, while playing (without quitting)
+  - When the effects are modified,
+  stop the music, recompile the fd and aud_write with the new effects and the remainding bytes
+- GUI
+
+### Idées
+
 Echo:
 
 - géré par le programme client
