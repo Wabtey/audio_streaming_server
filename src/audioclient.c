@@ -99,20 +99,24 @@ int main(int argc, char *argv[])
 
         // -- Handle QUIT command --
 
+        char user_cmd[MAX_LENGTH];
+
+        strcpy(user_cmd, music_file);
+
         // Convert to upper case
         int j = 0;
-        while (music_file[j] != '\0')
+        while (user_cmd[j] != '\0')
         {
-            music_file[j] = toupper(music_file[j]);
+            user_cmd[j] = toupper(user_cmd[j]);
             j++;
         }
 
         if (
-            strcmp(music_file, "YES") == 0 ||
-            strcmp(music_file, "Y") == 0 ||
-            strcmp(music_file, "OUI") == 0 ||
-            strcmp(music_file, "O") == 0 ||
-            strcmp(music_file, "QUIT") == 0)
+            strcmp(user_cmd, "YES") == 0 ||
+            strcmp(user_cmd, "Y") == 0 ||
+            strcmp(user_cmd, "OUI") == 0 ||
+            strcmp(user_cmd, "O") == 0 ||
+            strcmp(user_cmd, "QUIT") == 0)
         {
             // quit = TRUE;
             printf("--Client-- Quitting...\n");
