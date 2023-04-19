@@ -13,13 +13,15 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+// -- for timeout --
+#include <sys/time.h>
 // -- close sockets --
 #include <unistd.h>
 
 // --aud_writeinit--
 #include "../include/audio.h"
 
-#define MAX_LENGTH 50
+#define MAX_LENGTH 150
 #define TRUE 1
 #define FALSE 0
 
@@ -55,7 +57,7 @@ int main(int argc, char *argv[])
     struct sockaddr_in addr;
 
     // Receive's Stuff
-    socklen_t len, flen;
+    socklen_t reception_len, flen;
     struct sockaddr_in from;
     flen = sizeof(struct sockaddr_in);
 
@@ -89,12 +91,33 @@ int main(int argc, char *argv[])
 
     printf("--Client-- %02d:%02d:%02d - Done with binding\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
 
+    // -- Socket Timeout --
+
+    fd_set read_set;
+    struct timeval read_timeout;
+    int select_num;
+    FD_ZERO(&read_set);
+    FD_SET(socket_descriptor, &read_set);
+    read_timeout.tv_sec = 0;
+    read_timeout.tv_usec = 1000000; // 0.5s == 500000
+
+    int timeout_number = 0;
+
+    // int timeout_err = setsockopt(socket_descriptor, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof read_timeout);
+    // if (timeout_err < 0)
+    // {
+    //     perror("Error server: socket set Timeout !");
+    //     exit(1);
+    // }
+
+    // printf("--Client-- Done with timeout management\n");
+
+    // client_loop:
 
     // int quit = FALSE;
     // !quit
     while (TRUE)
     {
-
         // -- Command line - Music's Name Emission --
 
         t = time(NULL);
@@ -160,37 +183,69 @@ int main(int argc, char *argv[])
         tm = *localtime(&t);
         printf("--Client-- %02d:%02d:%02d - %dbytes sent\n", tm.tm_hour, tm.tm_min, tm.tm_sec, send_err);
 
-        int file_existence;
+        int file_existence = -1;
 
-        t = time(NULL);
-        tm = *localtime(&t);
-        printf("--Client-- %02d:%02d:%02d - Send State: Ready\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
-        send_err = sendto(
-            socket_descriptor,
-            client_ready,
-            sizeof(client_ready),
-            0,
-            (struct sockaddr *)&dest,
-            sizeof(struct sockaddr_in));
-
-        if (send_err < 0)
+        while (file_existence == -1)
         {
-            perror("Error client: Ready Datagram sending !");
-            exit(1);
-        }
 
-        len = recvfrom(
-            socket_descriptor,
-            &file_existence,
-            sizeof(file_existence),
-            0,
-            (struct sockaddr *)&from,
-            &flen);
+            t = time(NULL);
+            tm = *localtime(&t);
+            printf("--Client-- %02d:%02d:%02d - Send State: Ready\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
+            send_err = sendto(
+                socket_descriptor,
+                client_ready,
+                sizeof(client_ready),
+                0,
+                (struct sockaddr *)&dest,
+                sizeof(struct sockaddr_in));
 
-        if (len < 0)
-        {
-            perror("Error client: file_existence Reception !");
-            exit(1);
+            if (send_err < 0)
+            {
+                perror("Error client: Ready Datagram sending !");
+                exit(1);
+            }
+
+            // number of descriptor which are ready for IO, 0 for tiemout, -1 err
+            select_num = select(socket_descriptor + 1, &read_set, NULL, NULL, &read_timeout);
+            if (select_num < 0)
+            {
+                perror("Error client: select() !");
+                exit(1);
+            }
+            if (select_num == 0)
+            {
+                timeout_number++;
+
+                t = time(NULL);
+                tm = *localtime(&t);
+                printf("--Client-- %02d:%02d:%02d - Timeout on file_existence\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
+                // "last remaining valid use of `goto`" as I read somewhere
+                // goto client_loop;
+                // if (timeout_number >= 1)
+                // {
+                //     goto close_client;
+                // }
+
+                // only available if our music_name or client_ready wasn't received
+                // that the server is still in the recvfrom()
+                continue;
+            }
+            if (FD_ISSET(socket_descriptor, &read_set))
+            {
+                reception_len = recvfrom(
+                    socket_descriptor,
+                    &file_existence,
+                    sizeof(file_existence),
+                    0,
+                    (struct sockaddr *)&from,
+                    &flen);
+
+                if (reception_len < 0)
+                {
+                    perror("Error client: file_existence Reception !");
+                    exit(1);
+                }
+            }
         }
 
         if (!file_existence)
@@ -373,39 +428,69 @@ int main(int argc, char *argv[])
 
         for (int count = 0; count < 3; count++)
         {
-            t = time(NULL);
-            tm = *localtime(&t);
-            printf("--Client-- %02d:%02d:%02d - Send State: Ready\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
-            send_err = sendto(
-                socket_descriptor,
-                client_ready,
-                sizeof(client_ready),
-                0,
-                (struct sockaddr *)&dest,
-                sizeof(struct sockaddr_in));
-
-            if (send_err < 0)
+            // reset server msg
+            server_message = -1;
+            while (server_message == -1)
             {
-                perror("Error client: Ready Datagram sending !");
-                exit(1);
-            }
 
-            t = time(NULL);
-            tm = *localtime(&t);
-            printf("--Client-- %02d:%02d:%02d - Wait Audio Data\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
+                t = time(NULL);
+                tm = *localtime(&t);
+                printf("--Client-- %02d:%02d:%02d - Send State: Ready\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
+                send_err = sendto(
+                    socket_descriptor,
+                    client_ready,
+                    sizeof(client_ready),
+                    0,
+                    (struct sockaddr *)&dest,
+                    sizeof(struct sockaddr_in));
 
-            len = recvfrom(
-                socket_descriptor,
-                &server_message,
-                sizeof(server_message),
-                0,
-                (struct sockaddr *)&from,
-                &flen);
+                if (send_err < 0)
+                {
+                    perror("Error client: Ready Datagram sending !");
+                    exit(1);
+                }
 
-            if (len < 0)
-            {
-                perror("Error client: Msg Reception !");
-                exit(1);
+                t = time(NULL);
+                tm = *localtime(&t);
+                printf("--Client-- %02d:%02d:%02d - Wait Audio Data\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+                select_num = select(socket_descriptor + 1, &read_set, NULL, NULL, &read_timeout);
+                if (select_num < 0)
+                {
+                    perror("Error client: select() !");
+                    exit(1);
+                }
+                if (select_num == 0)
+                {
+                    timeout_number++;
+
+                    t = time(NULL);
+                    tm = *localtime(&t);
+                    printf("--Client-- %02d:%02d:%02d - Timeout on audio data\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
+                    // goto client_loop;
+                    // if (timeout_number >= 1)
+                    // {
+                    //     goto close_client;
+                    // }
+                    // resend the client_ready until the server send us something
+                    continue;
+                }
+                if (FD_ISSET(socket_descriptor, &read_set))
+                {
+                    reception_len = recvfrom(
+                        socket_descriptor,
+                        &server_message,
+                        sizeof(server_message),
+                        0,
+                        (struct sockaddr *)&from,
+                        &flen);
+
+                    if (reception_len < 0)
+                    {
+                        perror("Error client: Msg Reception !");
+                        exit(1);
+                    }
+                }
             }
 
             if (count == 0)
@@ -443,7 +528,7 @@ int main(int argc, char *argv[])
                 }
             }
 
-            printf("Received %d bytes from host %s port, %d: %i\n", len,
+            printf("Received %d bytes from host %s port, %d: %i\n", reception_len,
                    inet_ntoa(from.sin_addr), ntohs(from.sin_port), server_message);
         }
 
@@ -466,6 +551,8 @@ int main(int argc, char *argv[])
             // wait for buffer and the music_bytes
             for (int count = 0; count < 2; count++)
             {
+                // audio_chunk_loop:
+
                 t = time(NULL);
                 tm = *localtime(&t);
                 printf("--Client-- %02d:%02d:%02d - Send State: Ready\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
@@ -487,56 +574,85 @@ int main(int argc, char *argv[])
                 tm = *localtime(&t);
                 printf("--Client-- %02d:%02d:%02d - Wait Audio Chunk\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
 
-                if (count == 0)
+                select_num = select(socket_descriptor + 1, &read_set, NULL, NULL, &read_timeout);
+                if (select_num < 0)
                 {
-                    len = recvfrom(
-                        socket_descriptor,
-                        &byte_left,
-                        sizeof(byte_left),
-                        0,
-                        (struct sockaddr *)&from,
-                        &flen);
-
-                    if (len < 0)
-                    {
-                        perror("Error client: Music Byte Reception !");
-                        exit(1);
-                    }
+                    perror("Error client: select() !");
+                    exit(1);
+                }
+                if (select_num == 0)
+                {
+                    timeout_number++;
 
                     t = time(NULL);
                     tm = *localtime(&t);
-                    printf("--Client-- %02d:%02d:%02d - music's bytes: %zd\n", tm.tm_hour, tm.tm_min, tm.tm_sec, byte_left);
+                    printf("--Client-- %02d:%02d:%02d - Timeout on audio chunk\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
+                    // DEBUG
+                    // if (timeout_number >= 1)
+                    // {
+                    //     goto close_client;
+                    // }
+                    // or goto audio_chunk_loop
+                    count--;
+                    continue;
                 }
-                else if (count == 1)
+                if (FD_ISSET(socket_descriptor, &read_set))
                 {
-
-                    len = recvfrom(
-                        socket_descriptor,
-                        buffer,
-                        sizeof(buffer),
-                        0,
-                        (struct sockaddr *)&from,
-                        &flen);
-
-                    if (len < 0)
+                    if (count == 0)
                     {
-                        perror("Error client: Buffer Reception !");
-                        exit(1);
-                    }
+                        reception_len = recvfrom(
+                            socket_descriptor,
+                            &byte_left,
+                            sizeof(byte_left),
+                            0,
+                            (struct sockaddr *)&from,
+                            &flen);
 
-                    t = time(NULL);
-                    tm = *localtime(&t);
-                    printf("--Client-- %02d:%02d:%02d - buffer:\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
+                        if (reception_len < 0)
+                        {
+                            perror("Error client: Music Byte Reception !");
+                            exit(1);
+                        }
+
+                        t = time(NULL);
+                        tm = *localtime(&t);
+                        printf("--Client-- %02d:%02d:%02d - music's bytes: %zd\n", tm.tm_hour, tm.tm_min, tm.tm_sec, byte_left);
+                    }
+                    else if (count == 1)
+                    {
+
+                        reception_len = recvfrom(
+                            socket_descriptor,
+                            buffer,
+                            sizeof(buffer),
+                            0,
+                            (struct sockaddr *)&from,
+                            &flen);
+
+                        if (reception_len < 0)
+                        {
+                            perror("Error client: Buffer Reception !");
+                            exit(1);
+                        }
+
+                        t = time(NULL);
+                        tm = *localtime(&t);
+                        printf("--Client-- %02d:%02d:%02d - buffer:\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
+                    }
                 }
 
-                printf("Received %d bytes from host %s port, %d\n", len,
+                printf("Received %d bytes from host %s port, %d\n", reception_len,
                        inet_ntoa(from.sin_addr), ntohs(from.sin_port));
             }
             if (byte_left <= 0)
             {
+
                 t = time(NULL);
                 tm = *localtime(&t);
                 printf("--Client-- %02d:%02d:%02d - The music ends\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+                // FIXME: There is some pop (sound bug) at the end/or start (after the timeout management update)
+
                 // the break is mandatory to avoid copypaste code
                 // and to ensure that we don't ask the computer to read 0 bytes
                 break;
@@ -550,7 +666,7 @@ int main(int argc, char *argv[])
             exit(1);
         }
     }
-
+    // close_client:
     // TODO: Close it after a user timeout
     // -- Close the Socket --
 
