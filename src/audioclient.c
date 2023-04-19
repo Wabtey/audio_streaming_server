@@ -340,9 +340,11 @@ int main(int argc, char *argv[])
             char volume_wanted[MAX_LENGTH];
             while (!correct_volume)
             {
-                printf("--Client-- Please type here, the wanted volume.\n");
+                t = time(NULL);
+                tm = *localtime(&t);
+                printf("--Client-- %02d:%02d:%02d - Please type here, the wanted volume.\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
                 // , 0.5: for twice more quiet
-                printf("--Client-- examples, 1: for normal, 2: for twice louder (only interger are currently accepted :/)\n");
+                printf("--Client-- %02d:%02d:%02d - examples, 1: for normal, 2: for twice louder (only interger are currently accepted :/)\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
 
                 if (fgets(volume_wanted, sizeof(volume_wanted), stdin) == NULL)
                 {
@@ -358,7 +360,9 @@ int main(int argc, char *argv[])
                 printf("--Client-- *%f*\n", volume);
                 if (volume < 0)
                 {
-                    printf("--Client-- You cannot play music at a negative volume. Duh.\n");
+                    t = time(NULL);
+                    tm = *localtime(&t);
+                    printf("--Client-- %02d:%02d:%02d - You cannot play music at a negative volume. Duh.\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
                 }
                 else if ((*endptr == '\0') || (isspace(*endptr) != 0))
                     correct_volume = TRUE;
