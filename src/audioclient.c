@@ -228,6 +228,7 @@ int main(int argc, char *argv[])
         }
 
         double speed = 1;
+        double volume = 1;
         int channels = 0;
 
         if (effects)
@@ -256,6 +257,34 @@ int main(int argc, char *argv[])
                 }
                 else if ((*endptr == '\0') || (isspace(*endptr) != 0))
                     correct_speed = TRUE;
+            }
+
+            int correct_volume = FALSE;
+            char volume_wanted[MAX_LENGTH];
+            while (!correct_volume)
+            {
+                printf("--Client-- Please type here, the wanted volume.\n");
+                // , 0.5: for twice more quiet
+                printf("--Client-- examples, 1: for normal, 2: for twice louder (only interger are currently accepted :/)\n");
+
+                if (fgets(volume_wanted, sizeof(volume_wanted), stdin) == NULL)
+                {
+                    /* Unexpected error */
+                    perror("Error client: volume fgets !");
+                    exit(1);
+                }
+
+                // parse the string into float
+                volume = atoi(volume_wanted);
+                // parse the string into float
+                // volume = strtod(volume_wanted, &endptr);
+                printf("--Client-- *%f*\n", volume);
+                if (volume < 0)
+                {
+                    printf("--Client-- You cannot play music at a negative volume. Duh.\n");
+                }
+                else if ((*endptr == '\0') || (isspace(*endptr) != 0))
+                    correct_volume = TRUE;
             }
 
             char channels_wanted[MAX_LENGTH];
@@ -463,6 +492,19 @@ int main(int argc, char *argv[])
                 // and to ensure that we don't ask the computer to read 0 bytes
                 break;
             }
+
+            // -- Volume Control --
+            for (int i = 0; i < sizeof(buffer); i++)
+            {
+                buffer[i] = volume * buffer[i];
+                // printf("%d ", buffer[i]);
+                // unsigned cast = volume * buffer[i];
+                // buffer[i] = cast;
+                // printf("m: %d ", buffer[i]);
+            }
+            // printf(" \n");
+            // -- Volume Control --
+
             write(audio_descriptor, buffer, byte_left);
         } while (byte_left > 0);
 
