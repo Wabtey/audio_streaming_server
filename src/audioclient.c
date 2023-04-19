@@ -6,6 +6,8 @@
 #include <ctype.h>
 // -- strlen/strcpy --
 #include <string.h>
+// -- Display Time in Logs --
+#include <time.h>
 // -- UDP --
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -36,8 +38,14 @@ void upper_string(char s[])
     }
 }
 
+// REFACTOR: create a info!() macro / fn to print logs (instead of )
+
 int main(int argc, char *argv[])
 {
+    // ---- Log Init ----
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    // -- End Log Init --
 
     int socket_descriptor, bind_err, send_err;
 
@@ -79,7 +87,8 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    printf("--Client-- Done with binding\n");
+    printf("--Client-- %02d:%02d:%02d - Done with binding\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
+
 
     // int quit = FALSE;
     // !quit
@@ -88,14 +97,18 @@ int main(int argc, char *argv[])
 
         // -- Command line - Music's Name Emission --
 
-        printf("--Client-- Please type here, the name of the music. (or \"quit\")\n");
+        t = time(NULL);
+        tm = *localtime(&t);
+        printf("--Client-- %02d:%02d:%02d - Please type here, the name of the music. (or \"quit\")\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
 
         char music_file[MAX_LENGTH];
         fgets(music_file, MAX_LENGTH, stdin);
         // Remove the return character "\n" from the user input
         music_file[strlen(music_file) - 1] = '\0';
 
-        printf("--Client-- String read: *%s*\n", music_file);
+        t = time(NULL);
+        tm = *localtime(&t);
+        printf("--Client-- %02d:%02d:%02d - String read: *%s*\n", tm.tm_hour, tm.tm_min, tm.tm_sec, music_file);
 
         // -- Handle QUIT command --
 
@@ -116,10 +129,14 @@ int main(int argc, char *argv[])
             strcmp(user_cmd, "Y") == 0 ||
             strcmp(user_cmd, "OUI") == 0 ||
             strcmp(user_cmd, "O") == 0 ||
-            strcmp(user_cmd, "QUIT") == 0)
+            strcmp(user_cmd, "QUIT") == 0 ||
+            strcmp(user_cmd, "Q") == 0)
         {
             // quit = TRUE;
-            printf("--Client-- Quitting...\n");
+
+            t = time(NULL);
+            tm = *localtime(&t);
+            printf("--Client-- %02d:%02d:%02d - Quitting...\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
             break;
         }
 
@@ -139,11 +156,15 @@ int main(int argc, char *argv[])
             exit(1);
         }
 
-        printf("--Client-- %dbytes sent\n", send_err);
+        t = time(NULL);
+        tm = *localtime(&t);
+        printf("--Client-- %02d:%02d:%02d - %dbytes sent\n", tm.tm_hour, tm.tm_min, tm.tm_sec, send_err);
 
         int file_existence;
 
-        printf("--Client-- Send State: Ready\n");
+        t = time(NULL);
+        tm = *localtime(&t);
+        printf("--Client-- %02d:%02d:%02d - Send State: Ready\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
         send_err = sendto(
             socket_descriptor,
             client_ready,
@@ -174,7 +195,10 @@ int main(int argc, char *argv[])
 
         if (!file_existence)
         {
-            printf("--Client-- The file does not exist. Try Again\n");
+
+            t = time(NULL);
+            tm = *localtime(&t);
+            printf("--Client-- %02d:%02d:%02d - The file does not exist. Try Again\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
             continue;
         }
 
@@ -186,7 +210,10 @@ int main(int argc, char *argv[])
         int correct_answer = FALSE;
         while (!correct_answer)
         {
-            printf("--Client-- Do you want to apply any effects ? (Y/N)\n");
+
+            t = time(NULL);
+            tm = *localtime(&t);
+            printf("--Client-- %02d:%02d:%02d - Do you want to apply any effects ? (Y/N)\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
 
             if (fgets(answer_effects, MAX_LENGTH, stdin) == NULL)
             {
@@ -206,24 +233,27 @@ int main(int argc, char *argv[])
                 j++;
             }
 
-            printf("--Client-- *%s*\n", answer_effects);
+            t = time(NULL);
+            tm = *localtime(&t);
+            printf("--Client-- %02d:%02d:%02d - *%s*\n", tm.tm_hour, tm.tm_min, tm.tm_sec, answer_effects);
 
             // or just compare the first letter
             if (strcmp(answer_effects, "YES") == 0 || strcmp(answer_effects, "Y") == 0 || strcmp(answer_effects, "OUI") == 0 || strcmp(answer_effects, "O") == 0)
             {
-                printf("--Client-- YES\n");
                 correct_answer = TRUE;
                 effects = TRUE;
             }
             else if (strcmp(answer_effects, "NO") == 0 || strcmp(answer_effects, "NON") == 0 || strcmp(answer_effects, "N") == 0)
             {
-                printf("--Client-- NO\n");
                 correct_answer = TRUE;
                 effects = FALSE;
             }
             else
             {
-                printf("--Client-- Wrong answer. Please type (Y/N/Yes/No/Oui/Non/O)\n");
+
+                t = time(NULL);
+                tm = *localtime(&t);
+                printf("--Client-- %02d:%02d:%02d - Wrong answer. Please type (Y/N/Yes/No/Oui/Non/O)\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
             }
         }
 
@@ -238,8 +268,14 @@ int main(int argc, char *argv[])
             char speed_wanted[MAX_LENGTH];
             while (!correct_speed)
             {
-                printf("--Client-- Please type here, the wanted speed.\n");
-                printf("--Client-- examples, 1: for normal, 2: for twice faster, 0.5: for twice slower\n");
+
+                t = time(NULL);
+                tm = *localtime(&t);
+                printf("--Client-- %02d:%02d:%02d - Please type here, the wanted speed.\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+                t = time(NULL);
+                tm = *localtime(&t);
+                printf("--Client-- %02d:%02d:%02d - examples, 1: for normal, 2: for twice faster, 0.5: for twice slower\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
 
                 if (fgets(speed_wanted, sizeof(speed_wanted), stdin) == NULL)
                 {
@@ -252,7 +288,10 @@ int main(int argc, char *argv[])
                 speed = strtod(speed_wanted, &endptr);
                 if (speed == 0)
                 {
-                    printf("--Client-- You can't play a music at 0 or less speed.\n");
+
+                    t = time(NULL);
+                    tm = *localtime(&t);
+                    printf("--Client-- %02d:%02d:%02d - You can't play a music at 0 or less speed.\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
                 }
                 else if ((*endptr == '\0') || (isspace(*endptr) != 0))
                     correct_speed = TRUE;
@@ -262,7 +301,10 @@ int main(int argc, char *argv[])
             while (channels == 0)
             {
                 // REFACTOR: just ask for mono or stereo
-                printf("--Client-- Mono?(y/yes or n/no)\n");
+
+                t = time(NULL);
+                tm = *localtime(&t);
+                printf("--Client-- %02d:%02d:%02d - Mono?(y/yes or n/no)\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
 
                 if (fgets(channels_wanted, MAX_LENGTH, stdin) == NULL)
                 {
@@ -272,7 +314,9 @@ int main(int argc, char *argv[])
                 }
                 channels_wanted[strlen(channels_wanted) - 1] = '\0';
 
-                printf("--Client-- String read: *%s*\n", channels_wanted);
+                t = time(NULL);
+                tm = *localtime(&t);
+                printf("--Client-- %02d:%02d:%02d - String read: *%s*\n", tm.tm_hour, tm.tm_min, tm.tm_sec, channels_wanted);
 
                 // Convert to upper case
                 int j = 0;
@@ -302,14 +346,19 @@ int main(int argc, char *argv[])
                 }
                 else
                 {
-                    printf("--Client-- Wrong answer. Please type (Y/N/Yes/No/Oui/Non/O/Mono/Stereo)\n");
+
+                    t = time(NULL);
+                    tm = *localtime(&t);
+                    printf("--Client-- %02d:%02d:%02d - Wrong answer. Please type (Y/N/Yes/No/Oui/Non/O/Mono/Stereo)\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
                 }
             }
         }
 
         // -- data reply from the server --
 
-        printf("--Client-- Listening for incoming messages...\n\n");
+        t = time(NULL);
+        tm = *localtime(&t);
+        printf("--Client-- %02d:%02d:%02d - Listening for incoming messages...\n\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
 
         // default value
         int server_message; // = -1;
@@ -324,7 +373,9 @@ int main(int argc, char *argv[])
 
         for (int count = 0; count < 3; count++)
         {
-            printf("--Client-- Send State: Ready\n");
+            t = time(NULL);
+            tm = *localtime(&t);
+            printf("--Client-- %02d:%02d:%02d - Send State: Ready\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
             send_err = sendto(
                 socket_descriptor,
                 client_ready,
@@ -339,7 +390,9 @@ int main(int argc, char *argv[])
                 exit(1);
             }
 
-            printf("--Client-- Wait Audio Data\n");
+            t = time(NULL);
+            tm = *localtime(&t);
+            printf("--Client-- %02d:%02d:%02d - Wait Audio Data\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
 
             len = recvfrom(
                 socket_descriptor,
@@ -358,21 +411,36 @@ int main(int argc, char *argv[])
             if (count == 0)
             {
                 sample_rate = server_message;
-                printf("--Client-- sample_rate:\n");
+
+                t = time(NULL);
+                tm = *localtime(&t);
+                printf("--Client-- %02d:%02d:%02d - sample_rate:\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
             }
             else if (count == 1)
             {
                 sample_size = server_message;
-                printf("--Client-- sample_size:\n");
+
+                t = time(NULL);
+                tm = *localtime(&t);
+                printf("--Client-- %02d:%02d:%02d - sample_size:\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
             }
             else if (count == 2)
             {
                 if (channels == 0)
                 {
                     channels = server_message;
-                    printf("--Client-- Number of channels overwrite:%d\n", channels);
+
+                    t = time(NULL);
+                    tm = *localtime(&t);
+                    printf("--Client-- %02d:%02d:%02d - Number of channels overwrite:%d\n", tm.tm_hour, tm.tm_min, tm.tm_sec, channels);
                 }
-                printf("--Client-- channels:\n");
+                else
+                {
+
+                    t = time(NULL);
+                    tm = *localtime(&t);
+                    printf("--Client-- %02d:%02d:%02d - Channels Choosen: %d. Music Channels:\n", tm.tm_hour, tm.tm_min, tm.tm_sec, channels);
+                }
             }
 
             printf("Received %d bytes from host %s port, %d: %i\n", len,
@@ -398,7 +466,9 @@ int main(int argc, char *argv[])
             // wait for buffer and the music_bytes
             for (int count = 0; count < 2; count++)
             {
-                printf("--Client-- Send State: Ready\n");
+                t = time(NULL);
+                tm = *localtime(&t);
+                printf("--Client-- %02d:%02d:%02d - Send State: Ready\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
                 send_err = sendto(
                     socket_descriptor,
                     client_ready,
@@ -413,7 +483,9 @@ int main(int argc, char *argv[])
                     exit(1);
                 }
 
-                printf("--Client-- Wait Audio Data\n");
+                t = time(NULL);
+                tm = *localtime(&t);
+                printf("--Client-- %02d:%02d:%02d - Wait Audio Chunk\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
 
                 if (count == 0)
                 {
@@ -431,7 +503,9 @@ int main(int argc, char *argv[])
                         exit(1);
                     }
 
-                    printf("--Client-- music's bytes: %zd\n", byte_left);
+                    t = time(NULL);
+                    tm = *localtime(&t);
+                    printf("--Client-- %02d:%02d:%02d - music's bytes: %zd\n", tm.tm_hour, tm.tm_min, tm.tm_sec, byte_left);
                 }
                 else if (count == 1)
                 {
@@ -450,7 +524,9 @@ int main(int argc, char *argv[])
                         exit(1);
                     }
 
-                    printf("--Client-- buffer:\n");
+                    t = time(NULL);
+                    tm = *localtime(&t);
+                    printf("--Client-- %02d:%02d:%02d - buffer:\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
                 }
 
                 printf("Received %d bytes from host %s port, %d\n", len,
@@ -458,7 +534,9 @@ int main(int argc, char *argv[])
             }
             if (byte_left <= 0)
             {
-                printf("--Client-- The music ends\n");
+                t = time(NULL);
+                tm = *localtime(&t);
+                printf("--Client-- %02d:%02d:%02d - The music ends\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
                 // the break is mandatory to avoid copypaste code
                 // and to ensure that we don't ask the computer to read 0 bytes
                 break;
@@ -476,7 +554,9 @@ int main(int argc, char *argv[])
     // TODO: Close it after a user timeout
     // -- Close the Socket --
 
-    printf("--Client-- Close the Socket\n");
+    t = time(NULL);
+    tm = *localtime(&t);
+    printf("--Client-- %02d:%02d:%02d - Close the Socket\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
 
     int close_err = close(socket_descriptor);
 
