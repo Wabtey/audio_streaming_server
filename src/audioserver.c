@@ -2,6 +2,8 @@
 #include <stdlib.h>
 // -- perror --
 #include <stdio.h>
+// -- Display time in Logs --
+#include <time.h>
 // ---- UDP ----
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -9,8 +11,6 @@
 #include <arpa/inet.h>
 // -- close sockets / sleep / access --
 #include <unistd.h>
-// -- form timeout --
-#include <sys/time.h>
 
 // -- strlen --
 #include <string.h>
@@ -18,7 +18,7 @@
 // --audreadinit--
 #include "../include/audio.h"
 
-#define MAX_LENGTH 100
+#define MAX_LENGTH 200
 #define TRUE 1
 #define FALSE 0
 
@@ -28,6 +28,11 @@
 
 int main(int argc, char *argv[])
 {
+    // ---- Log Init ----
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    // -- End Log Init --
+
     // -- Socket Creation --
 
     int socket_descriptor, bind_err;
@@ -59,36 +64,32 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    printf("--Server-- Done with binding\n");
-
-    // -- Socket Timeout --
-
-    // struct timeval read_timeout;
-    // read_timeout.tv_sec = 0;
-    // read_timeout.tv_usec = 1000000;
-    // int timeout_err = setsockopt(socket_descriptor, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof read_timeout);
-
-    // if (timeout_err < 0)
-    // {
-    //     perror("Error server: socket set Timeout !");
-    //     exit(1);
-    // }
+    t = time(NULL);
+    tm = *localtime(&t);
+    printf("--Server-- %02d:%02d:%02d - Done with binding\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
 
     while (TRUE)
     {
 
-        printf("--Server-- Listening for incoming messages...\n\n");
+        t = time(NULL);
+        tm = *localtime(&t);
+        printf("--Server-- %02d:%02d:%02d - Listening for incoming messages...\n\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
 
         // -- Music's Name Reception --
 
         // Data Request from client
         char music_file[MAX_LENGTH];
-        socklen_t len, flen;
+        socklen_t reception_len, flen;
         struct sockaddr_in from;
 
         flen = sizeof(struct sockaddr_in);
-        printf("--Server-- wait...\n");
-        len = recvfrom(
+        t = time(NULL);
+        tm = *localtime(&t);
+        printf("--Server-- %02d:%02d:%02d - wait...\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+        // No timeout here
+
+        reception_len = recvfrom(
             socket_descriptor,
             music_file,
             sizeof(music_file),
@@ -96,22 +97,29 @@ int main(int argc, char *argv[])
             (struct sockaddr *)&from,
             &flen);
 
-        if (len < 0)
+        if (reception_len < 0)
         {
             perror("Error server: Msg Reception !");
             exit(1);
         }
 
-        printf("Received %d bytes from host %s port, %d: %s\n", len,
+        printf("Received %d bytes from host %s port, %d: %s\n", reception_len,
                inet_ntoa(from.sin_addr), ntohs(from.sin_port), music_file);
 
-        // send the ack msg
+        // send the ack msg?
 
-        printf("--Server-- Chaine lue: *%s*\n", music_file);
+        t = time(NULL);
+        tm = *localtime(&t);
+        printf("--Server-- %02d:%02d:%02d - Chaine lue: *%s*\n", tm.tm_hour, tm.tm_min, tm.tm_sec, music_file);
 
         // IDEA: Add the precise location of the audio file
-        // sscanf(music_file, "assets/audio/%s.wav", music_file);
-        // printf("--Server-- Chaine modifiée: *%s*\n", music_file);
+        char assets_path[MAX_LENGTH] = "assets/audio/%s.wav";
+        char music_path[MAX_LENGTH];
+        sprintf(music_path, assets_path, music_file);
+        // sscanf(music_file, , music_file);
+        t = time(NULL);
+        tm = *localtime(&t); //
+        printf("--Server-- %02d:%02d:%02d - Chaine modifiée: *%s*\n", tm.tm_hour, tm.tm_min, tm.tm_sec, music_path);
 
         // -- Get the client infos from the `from` sockaddr_in --
 
@@ -123,26 +131,32 @@ int main(int argc, char *argv[])
         // dest.sin_port = htons(Client_Port);
         // dest.sin_addr.s_addr = inet_addr(IP_CLIENT);
 
-        printf("--Server-- Testing File Existence\n");
+        t = time(NULL);
+        tm = *localtime(&t);
+        printf("--Server-- %02d:%02d:%02d - Testing File Existence\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
         // IDEA: test first if there is a .wav file (for more security)
 
         int file_existence;
 
-        if (access(music_file, F_OK) != 0)
+        if (access(music_path, F_OK) != 0)
         {
-            printf("--Server-- File doesn't exists\n");
+            t = time(NULL);
+            tm = *localtime(&t);
+            printf("--Server-- %02d:%02d:%02d - File doesn't exists\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
 
             file_existence = FALSE;
         }
         else
         {
-            printf("--Server-- File does exists\n");
+            t = time(NULL);
+            tm = *localtime(&t);
+            printf("--Server-- %02d:%02d:%02d - File does exists\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
 
             file_existence = TRUE;
         }
-
         // wait the 'ack'/'start signal' of the client
-        len = recvfrom(
+
+        reception_len = recvfrom(
             socket_descriptor,
             client_ready,
             sizeof(client_ready),
@@ -150,9 +164,9 @@ int main(int argc, char *argv[])
             (struct sockaddr *)&from,
             &flen);
 
-        // TODO: Add a strcmp with "Client ready"
+        // TODO: ? - Add a strcmp with "Client ready"
 
-        if (len < 0)
+        if (reception_len < 0)
         {
             perror("Error server: Msg Reception !");
             exit(1);
@@ -175,6 +189,7 @@ int main(int argc, char *argv[])
         if (!file_existence)
         {
             // Try Again
+            // DEBUG: break;
             continue;
         }
 
@@ -183,7 +198,7 @@ int main(int argc, char *argv[])
         int sample_rate;
         int sample_size;
         int channels;
-        int fd = aud_readinit(music_file, &sample_rate, &sample_size, &channels);
+        int fd = aud_readinit(music_path, &sample_rate, &sample_size, &channels);
 
         if (fd < 0)
         {
@@ -191,7 +206,9 @@ int main(int argc, char *argv[])
             exit(1);
         }
 
-        printf("--Server-- fd : *%d*\n", fd);
+        t = time(NULL);
+        tm = *localtime(&t);
+        printf("--Server-- %02d:%02d:%02d - fd : *%d*\n", tm.tm_hour, tm.tm_min, tm.tm_sec, fd);
 
         // -- Reply --
 
@@ -221,9 +238,10 @@ int main(int argc, char *argv[])
 
             // wait the 'ack'/'start signal' of the client
 
-            printf("--Server-- Wait the client\n");
-
-            len = recvfrom(
+            t = time(NULL);
+            tm = *localtime(&t);
+            printf("--Server-- %02d:%02d:%02d - Wait the client\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
+            reception_len = recvfrom(
                 socket_descriptor,
                 client_ready,
                 sizeof(client_ready),
@@ -231,22 +249,24 @@ int main(int argc, char *argv[])
                 (struct sockaddr *)&from,
                 &flen);
 
-            // TODO: Add a strcmp with "Client ready"
-
-            if (len < 0)
+            if (reception_len < 0)
             {
                 perror("Error server: Msg Reception !");
                 exit(1);
             }
 
-            printf("Received %d bytes from host %s port, %d: %s\n", len,
+            printf("Received %d bytes from host %s port, %d: %s\n", reception_len,
                    inet_ntoa(from.sin_addr), ntohs(from.sin_port), client_ready);
 
-            printf("--Server-- *%s*\n", client_ready);
+            t = time(NULL);
+            tm = *localtime(&t);
+            printf("--Server-- %02d:%02d:%02d - *%s*\n", tm.tm_hour, tm.tm_min, tm.tm_sec, client_ready);
 
             // send the sample_rate/size/channels
 
-            printf("--Server-- Send Data\n");
+            t = time(NULL);
+            tm = *localtime(&t);
+            printf("--Server-- %02d:%02d:%02d - Send Data\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
 
             send_err = sendto(
                 socket_descriptor,
@@ -262,12 +282,18 @@ int main(int argc, char *argv[])
                 exit(1);
             }
 
-            printf("--Server-- *%i* sent\n", send_msg);
-            printf("--Server-- %dbytes sent\n", send_err);
+            t = time(NULL);
+            tm = *localtime(&t);
+            printf("--Server-- %02d:%02d:%02d - *%i* sent\n", tm.tm_hour, tm.tm_min, tm.tm_sec, send_msg);
+            t = time(NULL);
+            tm = *localtime(&t);
+            printf("--Server-- %02d:%02d:%02d - %dbytes sent\n", tm.tm_hour, tm.tm_min, tm.tm_sec, send_err);
         }
 
         // ---- Read of the music ----
-        printf("--Server-- Send Music\n");
+        t = time(NULL);
+        tm = *localtime(&t);
+        printf("--Server-- %02d:%02d:%02d - Send Music\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
 
         unsigned char buffer[1024];
         // start by reading the first 1024 bytes
@@ -284,9 +310,11 @@ int main(int argc, char *argv[])
             {
                 // wait the 'ack'/'start signal' of the client
 
-                printf("--Server-- Wait the client\n");
+                t = time(NULL);
+                tm = *localtime(&t);
+                printf("--Server-- %02d:%02d:%02d - Wait the client\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
 
-                len = recvfrom(
+                reception_len = recvfrom(
                     socket_descriptor,
                     client_ready,
                     sizeof(client_ready),
@@ -294,25 +322,27 @@ int main(int argc, char *argv[])
                     (struct sockaddr *)&from,
                     &flen);
 
-                // TODO: Add a strcmp with "Client ready"
-
-                if (len < 0)
+                if (reception_len < 0)
                 {
                     perror("Error server: Msg Reception !");
                     exit(1);
                 }
 
-                printf("Received %d bytes from host %s port, %d: %s\n", len,
+                printf("Received %d bytes from host %s port, %d: %s\n", reception_len,
                        inet_ntoa(from.sin_addr), ntohs(from.sin_port), client_ready);
 
-                printf("--Server-- *%s*\n", client_ready);
+                t = time(NULL);
+                tm = *localtime(&t);
+                printf("--Server-- %02d:%02d:%02d - *%s*\n", tm.tm_hour, tm.tm_min, tm.tm_sec, client_ready);
 
                 // wait 1 second for the client opening
                 // sleep(1);
 
                 if (count == 0)
                 {
-                    printf("--Server-- Send the number of byte_left: *%zd*\n", byte_left);
+                    t = time(NULL);
+                    tm = *localtime(&t);
+                    printf("--Server-- %02d:%02d:%02d - Send the number of byte_left: *%zd*\n", tm.tm_hour, tm.tm_min, tm.tm_sec, byte_left);
                     send_err = sendto(
                         socket_descriptor,
                         &byte_left,
@@ -323,7 +353,9 @@ int main(int argc, char *argv[])
                 }
                 else if (count == 1)
                 {
-                    printf("--Server-- Send buffer\n");
+                    t = time(NULL);
+                    tm = *localtime(&t);
+                    printf("--Server-- %02d:%02d:%02d - Send buffer\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
                     send_err = sendto(
                         socket_descriptor,
                         buffer,
@@ -339,8 +371,9 @@ int main(int argc, char *argv[])
                     exit(1);
                 }
 
-                // printf("--Server-- %s sent\n", music_data);
-                printf("--Server-- %dbytes sent\n", send_err);
+                t = time(NULL);
+                tm = *localtime(&t);
+                printf("--Server-- %02d:%02d:%02d - %dbytes sent\n", tm.tm_hour, tm.tm_min, tm.tm_sec, send_err);
             }
         } while (byte_left > 0);
 
@@ -350,7 +383,9 @@ int main(int argc, char *argv[])
             exit(1);
         }
 
-        printf("--Server-- The music ends\n");
+        t = time(NULL);
+        tm = *localtime(&t);
+        printf("--Server-- %02d:%02d:%02d - The music ends\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
     }
 
     // When ? never suppose to do so.
