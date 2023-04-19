@@ -103,17 +103,6 @@ int main(int argc, char *argv[])
 
     int timeout_number = 0;
 
-    // int timeout_err = setsockopt(socket_descriptor, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof read_timeout);
-    // if (timeout_err < 0)
-    // {
-    //     perror("Error server: socket set Timeout !");
-    //     exit(1);
-    // }
-
-    // printf("--Client-- Done with timeout management\n");
-
-    // client_loop:
-
     // int quit = FALSE;
     // !quit
     while (TRUE)
@@ -219,12 +208,6 @@ int main(int argc, char *argv[])
                 t = time(NULL);
                 tm = *localtime(&t);
                 printf("--Client-- %02d:%02d:%02d - Timeout on file_existence\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
-                // "last remaining valid use of `goto`" as I read somewhere
-                // goto client_loop;
-                // if (timeout_number >= 1)
-                // {
-                //     goto close_client;
-                // }
 
                 // only available if our music_name or client_ready wasn't received
                 // that the server is still in the recvfrom()
@@ -467,11 +450,6 @@ int main(int argc, char *argv[])
                     t = time(NULL);
                     tm = *localtime(&t);
                     printf("--Client-- %02d:%02d:%02d - Timeout on audio data\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
-                    // goto client_loop;
-                    // if (timeout_number >= 1)
-                    // {
-                    //     goto close_client;
-                    // }
                     // resend the client_ready until the server send us something
                     continue;
                 }
@@ -587,12 +565,7 @@ int main(int argc, char *argv[])
                     t = time(NULL);
                     tm = *localtime(&t);
                     printf("--Client-- %02d:%02d:%02d - Timeout on audio chunk\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
-                    // DEBUG
-                    // if (timeout_number >= 1)
-                    // {
-                    //     goto close_client;
-                    // }
-                    // or goto audio_chunk_loop
+
                     count--;
                     continue;
                 }
@@ -667,7 +640,7 @@ int main(int argc, char *argv[])
         }
     }
     // close_client:
-    // TODO: Close it after a user timeout
+    // TODO: feature - Close it after a user timeout (in music name selection)
     // -- Close the Socket --
 
     t = time(NULL);
