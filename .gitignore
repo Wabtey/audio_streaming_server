@@ -36,6 +36,8 @@
 *.x86_64
 *.hex
 src/lecteur
+src/audioserver
+src/audioclient
 
 # Debug files
 *.dSYM/

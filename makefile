@@ -22,6 +22,26 @@ audio.o: ./src/audio.c ./include/audio.h
 	mkdir -p obj 
 	gcc $(CFLAGS) -c ./src/audio.c -o obj/audio.o
 
+# -- V2 --
+
+executeclient:
+	padsp ./src/audioclient
+
+executeserver:
+	./src/audioserver
+
+server: ./audioserver.o ./audioclient.o ./audio.o
+	gcc $(CFLAGS) -o ./src/audioserver ./obj/audioserver.o ./obj/audio.o
+	gcc $(CFLAGS) -o ./src/audioclient ./obj/audioclient.o ./obj/audio.o
+
+audioserver.o: ./src/audioserver.c ./include/audio.h
+	mkdir -p obj
+	gcc $(CFLAGS) -c ./src/audioserver.c -o ./obj/audioserver.o
+
+audioclient.o: ./src/audioclient.c ./include/audio.h
+	mkdir -p obj
+	gcc $(CFLAGS) -c ./src/audioclient.c -o ./obj/audioclient.o
+
 #
 # BIN
 #
@@ -43,6 +63,12 @@ obj/lecteur.o: src/lecteur.c include/audio.h
 obj/audio.o: src/audio.c include/audio.h
 	mkdir -p obj
 	gcc $(CFLAGS) -c src/audio.c -o obj/audio.o
+
+obj/audioclient.o: src/audioclient.c # include/audio.h
+	gcc $(CFLAGS) -c src/audioclient.c -I../include -o obj/audioclient.o
+
+obj/audioserver.o: src/audioserver.c # include/audio.h
+	gcc $(CFLAGS) -c src/audioserver.c -I../include -o obj/audioserver.o
 
 #
 # Remove files
