@@ -11,7 +11,9 @@ Ensuite, pour exécuter *audioserver* dans un terminal, il suffit de taper `make
 Pour exécuter *audioclient* dans un terminal, il suffit de taper `make executeclient`.
 
 Après, le client attend qu'on lui rentre l'emplacement du fichier à lire, pour qu'il puisse le demander au serveur.
-Ici, il faut donc rentrer par exemple `assets/audio/test.wav` .
+Ici, il faut donc rentrer par exemple `test` ou `Cottonwood Hike`
+(musique disponible en assets sur le tag de release github).
+Et choisir vos préférences pour les effets (Effets? Speed? Volume? Channels?)
 
 ## Communication entre le serveur et le client
 
@@ -110,6 +112,9 @@ do
         // and to ensure that we don't ask the computer to read 0 bytes
         break;
     }
+
+    // filter management - volume or force mono
+
     write(audio_descriptor, buffer, byte_left);
 } while (byte_left > 0);
 
@@ -128,4 +133,4 @@ Avant d'envoyer des données, nous souhaitons savoir que notre destinataire est 
 
 ### Resistance à certaine perte de paquet
 
-???
+Si le client envoie un message mais qu'il est perdu, (comme un msg de "ready") le recvfrom() suivant va timeout et reprendre à l'envoi de la confirmation.
