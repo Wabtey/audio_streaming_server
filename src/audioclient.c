@@ -98,15 +98,20 @@ int main(int argc, char *argv[])
     int select_num;
     FD_ZERO(&read_set);
     FD_SET(socket_descriptor, &read_set);
-    read_timeout.tv_sec = 0;
-    read_timeout.tv_usec = 1000000; // 0.5s == 500000
 
+    // TODO: remove unused counter
     int timeout_number = 0;
 
     // int quit = FALSE;
     // !quit
     while (TRUE)
     {
+        
+        // -- Socket Timeout Reset --
+
+        read_timeout.tv_sec = 0;
+        read_timeout.tv_usec = 1000000; // 0.5s == 500000
+
         // -- Command line - Music's Name Emission --
 
         t = time(NULL);
@@ -211,6 +216,7 @@ int main(int argc, char *argv[])
 
                 // only available if our music_name or client_ready wasn't received
                 // that the server is still in the recvfrom()
+                // FIXME: Reset timeout timer after each one
                 continue;
             }
             if (FD_ISSET(socket_descriptor, &read_set))
@@ -484,6 +490,7 @@ int main(int argc, char *argv[])
                     tm = *localtime(&t);
                     printf("--Client-- %02d:%02d:%02d - Timeout on audio data\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
                     // resend the client_ready until the server send us something
+                    // FIXME: Reset timeout timer after each one
                     continue;
                 }
                 if (FD_ISSET(socket_descriptor, &read_set))
@@ -600,6 +607,7 @@ int main(int argc, char *argv[])
                     printf("--Client-- %02d:%02d:%02d - Timeout on audio chunk\n", tm.tm_hour, tm.tm_min, tm.tm_sec);
 
                     count--;
+                    // FIXME: Reset timeout timer after each one
                     continue;
                 }
                 if (FD_ISSET(socket_descriptor, &read_set))
