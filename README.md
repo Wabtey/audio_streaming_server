@@ -3,7 +3,7 @@
 10-02-2023 -> 24-03-2023
 
 Gabriel DEHAYE et
-Florian Emmanuelle EPAIN
+Flo Emmanuelle EPAIN
 Grp 1.2
 
 ## Execution

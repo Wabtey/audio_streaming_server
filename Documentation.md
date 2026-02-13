@@ -1,14 +1,14 @@
 ---
-authors: "Dehaye Gabriel", "Epain Florian"
+authors: "Dehaye Gabriel", "Epain Florence"
 ---
 
 # Documentation Projet de Systèmes: streaming audio
 
 ## Commandes utilisateur.rice
 
-Dans un premier temps, il faut se situer dans le dossier *audio_streaming_server* et exécuter la commande `make server`.
-Ensuite, pour exécuter *audioserver* dans un terminal, il suffit de taper `make executeserver`.
-Pour exécuter *audioclient* dans un terminal, il suffit de taper `make executeclient`.
+Dans un premier temps, il faut se situer dans le dossier _audio_streaming_server_ et exécuter la commande `make server`.
+Ensuite, pour exécuter _audioserver_ dans un terminal, il suffit de taper `make executeserver`.
+Pour exécuter _audioclient_ dans un terminal, il suffit de taper `make executeclient`.
 
 Après, le client attend qu'on lui rentre l'emplacement du fichier à lire, pour qu'il puisse le demander au serveur.
 Ici, il faut donc rentrer par exemple `test` ou `Cottonwood Hike`
@@ -60,7 +60,7 @@ do
     for (int count = 0; count < 2; count++)
     {
         printf("--Client-- Send State: Ready\n");
-        
+
         // ! envoi du message indicant que le client est prêt à recevoir !
 
         printf("--Client-- Wait Audio Data\n");
@@ -98,7 +98,7 @@ do
                 perror("Error client: Buffer Reception !");
                 exit(1);
             }
-            
+
             printf("--Client-- buffer:\n");
         }
 
